@@ -3,95 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Web App</title>
+    <title>Lessons</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f5;
             margin: 0;
             padding: 20px;
         }
+        .lesson-container {
+            max-width: 600px;
+            margin: auto;
+        }
         .lesson {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
             margin: 10px 0;
-            background-color: #F1F3F4;
-            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
             cursor: pointer;
-            transition: background-color 0.3s ease;
         }
         .lesson:hover {
-            background-color: #E1E3E4;
+            transform: translateY(-5px);
         }
         .lesson-number {
             font-size: 24px;
             font-weight: bold;
+            display: inline-block;
+            width: 40px;
+            text-align: center;
+            margin-right: 10px;
         }
         .lesson-name {
             font-size: 18px;
+            display: inline-block;
+            text-align: left;
+            width: calc(100% - 60px);
         }
-        .dz-content {
+        .homework-text {
             display: none;
+            font-size: 16px;
             margin-top: 10px;
-            padding: 10px;
-            background-color: #EFEFEF;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            word-wrap: break-word; /* Обеспечивает перенос слов */
+            white-space: pre-wrap; /* Учитывает переносы строк в тексте */
+        }
+
+        .visible {
+            display: block;
+            opacity: 1;
+        }
+        .main-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
             border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .toggle-icon {
+            position: absolute;
+            right: 15px;
+            top: 20px;
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+        .toggle-icon.rotate {
+            transform: rotate(180deg);
+        }
+        .header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .no-homework, .error-message {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
         }
     </style>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-
-<div id="lessons-container"></div>
-
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
     let tg = window.Telegram.WebApp;
-    tg.expand();
 
-    // Main button to close the app
+    tg.expand();
     tg.MainButton.setText("Закрыть приложение");
     tg.MainButton.show();
 
-    tg.MainButton.onClick(function() {
-        tg.close();
+    let userId = tg.initDataUnsafe.user.id;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const lessonsContainer = document.createElement("div");
+        lessonsContainer.id = "lessons";
+        lessonsContainer.classList.add("lesson-container");
+        document.body.appendChild(lessonsContainer);
+
+        const headerHomework = document.createElement("div");
+        headerHomework.classList.add("header");
+        headerHomework.innerText = "Домашнее задание";
+        document.body.insertBefore(headerHomework, lessonsContainer);
+
+        fetch("https://louse-precious-sincerely.ngrok-free.app/api/check_user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: userId })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.registered) {
+                    const errorMessage = document.createElement("div");
+                    errorMessage.classList.add("error-message");
+                    errorMessage.innerText = data.message;
+                    lessonsContainer.appendChild(errorMessage);
+                } else {
+                    let hasHomework = false;
+
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 1) {
+                            hasHomework = true;
+                        }
+                    });
+
+                    if (hasHomework) {
+                        const headerNextDay = document.createElement("div");
+                        headerNextDay.classList.add("header");
+                        headerNextDay.innerText = "Уроки на следующий учебный день";
+                        lessonsContainer.appendChild(headerNextDay);
+                    }
+
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 1) {
+                            const lessonElement = document.createElement("div");
+                            lessonElement.classList.add("lesson");
+
+                            const lessonNumber = document.createElement("span");
+                            lessonNumber.classList.add("lesson-number");
+                            lessonNumber.innerText = lesson.lessonNumber;
+
+                            const lessonName = document.createElement("span");
+                            lessonName.classList.add("lesson-name");
+                            lessonName.innerText = lesson.lessonName;
+
+                            const homeworkText = document.createElement("div");
+                            homeworkText.classList.add("homework-text");
+                            homeworkText.innerHTML = `<strong>Домашнее задание:</strong> ${lesson.homeworkText}`;
+
+                            const toggleIcon = document.createElement("div");
+                            toggleIcon.classList.add("toggle-icon");
+                            toggleIcon.innerHTML = "&#x25BC;"; // Стрелка вниз
+
+                            lessonElement.appendChild(lessonNumber);
+                            lessonElement.appendChild(lessonName);
+                            lessonElement.appendChild(homeworkText);
+                            lessonElement.appendChild(toggleIcon);
+
+                            lessonElement.addEventListener("click", () => {
+                                homeworkText.classList.toggle("visible");
+                                toggleIcon.innerHTML = homeworkText.classList.contains("visible") ? "&#x25B2;" : "&#x25BC;"; // Меняем стрелку
+                                toggleIcon.classList.toggle("rotate", homeworkText.classList.contains("visible")); // Поворачиваем иконку
+                            });
+
+                            lessonsContainer.appendChild(lessonElement);
+                        }
+                    });
+
+                    let hasOtherDayLessons = false;
+
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 0) {
+                            hasOtherDayLessons = true; // Проверяем наличие других уроков
+                        }
+                    });
+
+                    if (hasOtherDayLessons) {
+                        const headerOtherDay = document.createElement("div");
+                        headerOtherDay.classList.add("header");
+                        headerOtherDay.innerText = "Уроки на другие дни";
+                        lessonsContainer.appendChild(headerOtherDay);
+                    }
+
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 0) {
+                            const lessonElement = document.createElement("div");
+                            lessonElement.classList.add("lesson");
+
+                            const lessonNumber = document.createElement("span");
+                            lessonNumber.classList.add("lesson-number");
+                            lessonNumber.innerText = lesson.lessonNumber;
+
+                            const lessonName = document.createElement("span");
+                            lessonName.classList.add("lesson-name");
+                            lessonName.innerText = lesson.lessonName;
+
+                            const homeworkText = document.createElement("div");
+                            homeworkText.classList.add("homework-text");
+                            homeworkText.innerHTML = `<strong>Домашнее задание:</strong> ${lesson.homeworkText}`;
+
+                            const toggleIcon = document.createElement("div");
+                            toggleIcon.classList.add("toggle-icon");
+                            toggleIcon.innerHTML = "&#x25BC;"; // Стрелка вниз
+
+                            lessonElement.appendChild(lessonNumber);
+                            lessonElement.appendChild(lessonName);
+                            lessonElement.appendChild(homeworkText);
+                            lessonElement.appendChild(toggleIcon);
+
+                            lessonElement.addEventListener("click", () => {
+                                homeworkText.classList.toggle("visible");
+                                toggleIcon.innerHTML = homeworkText.classList.contains("visible") ? "&#x25B2;" : "&#x25BC;"; // Меняем стрелку
+                                toggleIcon.classList.toggle("rotate", homeworkText.classList.contains("visible")); // Поворачиваем иконку
+                            });
+
+                            lessonsContainer.appendChild(lessonElement);
+                        }
+                    });
+
+                    if (!hasHomework && !hasOtherDayLessons) {
+                        const noHomeworkMessage = document.createElement("div");
+                        noHomeworkMessage.classList.add("no-homework");
+                        noHomeworkMessage.innerText = "ДЗ и расписания пока нет.";
+                        lessonsContainer.appendChild(noHomeworkMessage);
+                    }
+                }
+            })
+            .catch(error => console.error("Error fetching data:", error));
     });
-
-    const userId = tg.initDataUnsafe.user.id;
-
-    // Fetch data from Flask server
-    fetch(`/check_user/${userId}`)
-        .then(response => response.json())
-        .then(data => {
-            const lessonsContainer = document.getElementById('lessons-container');
-            if (data.registered) {
-                data.lessons.forEach((lesson, index) => {
-                    const lessonDiv = document.createElement('div');
-                    lessonDiv.classList.add('lesson');
-                    lessonDiv.innerHTML = `<div class="lesson-number">${index + 1}</div><div class="lesson-name">${lesson.name}</div>`;
-
-                    const dzContent = document.createElement('div');
-                    dzContent.classList.add('dz-content');
-                    dzContent.textContent = lesson.homework ? lesson.homework : 'ДЗ не задано';
-                    lessonDiv.appendChild(dzContent);
-
-                    lessonDiv.onclick = () => {
-                        dzContent.style.display = dzContent.style.display === 'block' ? 'none' : 'block';
-                    };
-
-                    lessonsContainer.appendChild(lessonDiv);
-                });
-            } else {
-                const errorMsg = document.createElement('div');
-                errorMsg.style.color = 'red';
-                errorMsg.textContent = 'Пользователь не зарегистрирован!';
-                lessonsContainer.appendChild(errorMsg);
-            }
-        });
 </script>
 </body>
 </html>
