@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Web App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .lesson {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #F1F3F4;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .lesson:hover {
+            background-color: #E1E3E4;
+        }
+        .lesson-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .lesson-name {
+            font-size: 18px;
+        }
+        .dz-content {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #EFEFEF;
+            border-radius: 10px;
+        }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<div id="lessons-container"></div>
+
+<script>
+    let tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Main button to close the app
+    tg.MainButton.setText("Закрыть приложение");
+    tg.MainButton.show();
+
+    tg.MainButton.onClick(function() {
+        tg.close();
+    });
+
+    const userId = tg.initDataUnsafe.user.id;
+
+    // Fetch data from Flask server
+    fetch(`/check_user/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            const lessonsContainer = document.getElementById('lessons-container');
+            if (data.registered) {
+                data.lessons.forEach((lesson, index) => {
+                    const lessonDiv = document.createElement('div');
+                    lessonDiv.classList.add('lesson');
+                    lessonDiv.innerHTML = `<div class="lesson-number">${index + 1}</div><div class="lesson-name">${lesson.name}</div>`;
+
+                    const dzContent = document.createElement('div');
+                    dzContent.classList.add('dz-content');
+                    dzContent.textContent = lesson.homework ? lesson.homework : 'ДЗ не задано';
+                    lessonDiv.appendChild(dzContent);
+
+                    lessonDiv.onclick = () => {
+                        dzContent.style.display = dzContent.style.display === 'block' ? 'none' : 'block';
+                    };
+
+                    lessonsContainer.appendChild(lessonDiv);
+                });
+            } else {
+                const errorMsg = document.createElement('div');
+                errorMsg.style.color = 'red';
+                errorMsg.textContent = 'Пользователь не зарегистрирован!';
+                lessonsContainer.appendChild(errorMsg);
+            }
+        });
+</script>
+</body>
+</html>
