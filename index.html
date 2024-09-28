@@ -25,26 +25,42 @@
             position: relative;
             cursor: pointer;
         }
-        .lesson:hover {
-            transform: translateY(-5px);
+        /* Эффект наведения для ПК */
+        @media (hover: hover) {
+            .lesson:hover {
+                transform: translateY(-5px);
+            }
+        }
+        /* Для мобильных устройств используем другой эффект */
+        @media (hover: none) {
+            .lesson:active {
+                transform: translateY(-5px);
+            }
         }
         .lesson-number {
             font-size: 24px;
             font-weight: bold;
             display: inline-block;
             width: 40px;
+            height: 40px; /* Установите высоту для квадратного вида */
             text-align: center;
             margin-right: 10px;
+            background-color: #007bff; /* Цвет фона */
+            color: white; /* Цвет текста */
+            border-radius: 12px; /* Закругленные углы */
+            line-height: 40px; /* Центрирование текста по вертикали */
         }
+
         .lesson-name {
             font-size: 18px;
             display: inline-block;
             text-align: left;
-            width: calc(100% - 60px);
+            width: calc(100% - 90px);
         }
         .homework-text {
             display: none;
             font-size: 16px;
+            color: #282828;
             margin-top: 10px;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -81,7 +97,7 @@
         .header {
             font-size: 20px;
             font-weight: bold;
-            margin-top: 20px;
+            margin-top: 10px;
             margin-bottom: 10px;
             text-align: center;
         }
@@ -89,6 +105,7 @@
             text-align: left;
             margin-bottom: 5px;
             margin-top: 0;
+            color: #282828;
             font-weight: bold;
         }
         .no-homework, .error-message, .no-class {
@@ -242,13 +259,6 @@
                                 lessonsContainer.appendChild(lessonElement);
                             }
                         });
-                    }
-
-                    if (!hasNextDayLessons && !hasOtherDayLessons) {
-                        const noHomeworkMessage = document.createElement("div");
-                        noHomeworkMessage.classList.add("no-homework");
-                        noHomeworkMessage.innerText = "ДЗ пока нет.";
-                        lessonsContainer.appendChild(noHomeworkMessage);
                     }
                 }
             })
